@@ -10,10 +10,8 @@ sudo usermod -aG docker root
 service docker start
 
 # Docker-compose install
-curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-chmod 755 /usr/local/bin/docker-compose
-
-
+curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/bin/docker-compose
+chmod 755 /usr/bin/docker-compose
 
 curl -sL bit.ly/ralf_dcs -o ./dcs
 sudo chmod 755 ./dcs
