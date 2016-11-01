@@ -1,5 +1,8 @@
 # vagrant_docker_cluster
-
+## Vagrant install
+ * Download: https://www.vagrantup.com/downloads.html
+ 
+## Modify the `Vagrantfile`
 * Need to change the box image as you have at below line in Vagrantfile
 
 
