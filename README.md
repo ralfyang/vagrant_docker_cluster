@@ -12,8 +12,10 @@ vagrant box add ubuntu1404 https://cloud-images.ubuntu.com/vagrant/trusty/curren
 ```
 
 ### Source Pull
-* git clone https://github.com/goody80/vagrant_docker_cluster.git
-
+```
+git clone https://github.com/goody80/vagrant_docker_cluster.git
+cd vagrant_docker_cluster
+```
 
 ## Modify the `Vagrantfile`
 * Need to change the box image as you have at below line in Vagrantfile
