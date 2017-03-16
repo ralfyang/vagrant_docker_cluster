@@ -13,6 +13,7 @@ vagrant box add ubuntu1404 https://cloud-images.ubuntu.com/vagrant/trusty/curren
 
 
 ### Source Clone
+
 ```
 git clone https://github.com/goody80/vagrant_docker_cluster.git
 cd vagrant_docker_cluster
