@@ -51,3 +51,8 @@ cd $Source
 curl -sL bit.ly/ralf_dcs -o ./dcs
 sudo chmod 755 ./dcs
 sudo mv ./dcs /usr/bin/dcs
+
+
+
+## Config for the ElasticSearch
+echo "vm.max_map_count=262144" >> /etc/sysctl.conf
