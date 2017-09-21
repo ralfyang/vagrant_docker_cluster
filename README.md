@@ -56,3 +56,8 @@ Your identification has been saved in /Users/ralfyang/.ssh/id_rsa.
 Your public key has been saved in /Users/ralfyang/.ssh/id_rsa.pub.
 The key fingerprint is:
 ```
+
+### How to login
+```
+vagrant ssh docker01.dev
+```
