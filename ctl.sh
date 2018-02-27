@@ -1,7 +1,7 @@
 #!/bin/bash
 hname=$1
 
-  if [[ $hname = ""]];then
+  if [[ $hname = "" ]];then
     hname="docker01.dev"
   fi
 

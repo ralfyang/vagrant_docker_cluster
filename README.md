@@ -1,23 +1,38 @@
 # vagrant_docker_cluster
 
-## Requirement Install
+## Install the Requirements
+### Source Clone first
+```
+git clone https://github.com/goody80/vagrant_docker_cluster.git
+cd vagrant_docker_cluster
+```
+
+### Auto-Install & use(For the Macbook User or Linux)
+```
+$ ./ctl.sh
+===========================================================
+ What do you want ?
+===========================================================
+[0] Install the Virtualbox & Vagrant <--- HERE!
+[1] Start VM & login
+[2] Login to VM
+[3] Stop VM
+[4] Reload VM
+[5] Reboot VM
+[RM] Remove VM
+===========================================================
+ Please insert a key as you need
+===========================================================
+
+```
+
+## Install the Requirements - Manual
 ### Virtual Box install
 * https://www.virtualbox.org/wiki/Downloads
 
 ### Vagrant install
 * https://www.vagrantup.com/downloads.html
-* Box(Virtual Machine OS image) add
-```
-vagrant box add ubuntu1404 https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box
-```
 
-
-### Source Clone
-
-```
-git clone https://github.com/goody80/vagrant_docker_cluster.git
-cd vagrant_docker_cluster
-```
 
 ## Modify the `Vagrantfile`
 * Need to change the box image as you have at below line in Vagrantfile
