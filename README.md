@@ -8,6 +8,8 @@ cd vagrant_docker_cluster
 ```
 
 ### Auto-Install & use(For the Macbook User or Linux)
+[![asciicast](https://asciinema.org/a/78LKZjwwx0dMM595q0GqhDrvw.png)](https://asciinema.org/a/78LKZjwwx0dMM595q0GqhDrvw)
+
 ```
 $ ./ctl.sh
 ===========================================================
