@@ -36,20 +36,7 @@ $ ./ctl.sh
 * https://www.vagrantup.com/downloads.html
 
 
-## Modify the `Vagrantfile`
-* Need to change the box image as you have at below line in Vagrantfile
-
-
-```
-vi Vagrantfile
-
-.
-.
-   node.vm.box = "ubuntu1404"
-.
-.
-```
-
+## Vagrant VM create
 ```
 vagrant up docker01.dev
 ```
