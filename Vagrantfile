@@ -26,7 +26,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 #    config.vm.network "forwarded_port", guest: 5601, host: 5601
 #    config.vm.network "forwarded_port", guest: 5000, host: 5000
 #    config.vm.network "forwarded_port", guest: 9200, host: 9200
-#    config.vm.network "private_network", ip: "192.168.10.1#{i}"
+    config.vm.network "private_network", ip: "192.168.10.1#{i}"
 #    config.vm.network "public_network", :dev => "br0", :mode => "bridge", :type => "bridge", :ip => "192.168.133.10#{i}", :netmask => "255.255.255.0", :auto_config => "false"
       node.vm.box = OS_NAME
       node.vm.box_url = OS_URL
