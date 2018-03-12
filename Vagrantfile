@@ -8,9 +8,9 @@
 
 ######## VirtualBox Box image name
 #OS_NAME="folimy/Ubuntu1604_with_docker"
-#OS_URL="https://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-vagrant.box"
+OS_URL="https://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-vagrant.box"
 OS_NAME="ubuntu1604"
-OS_URL="https://app.vagrantup.com/folimy/boxes/Ubuntu1604_with_docker/versions/0.1.1/providers/virtualbox.box"
+#OS_URL="https://app.vagrantup.com/folimy/boxes/Ubuntu1604_with_docker/versions/0.1.1/providers/virtualbox.box"
 
 VAGRANTFILE_API_VERSION = "2"
 NODE_COUNT = 10
