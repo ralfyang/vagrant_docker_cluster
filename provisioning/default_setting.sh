@@ -13,3 +13,4 @@ apt-get install wget -y
 
 mkdir -p /root/.ssh
 cp -Rfv /tmp/conf.d/* /root/.ssh
+sudo -u vagrant echo "alias ll='ls -lia' " >> /home/vagrant/.bash_profile
