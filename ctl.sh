@@ -64,7 +64,7 @@ application_install(){
 
     	Darwin)
             	## VirtualBox Download & Install
-            	VirtualBox_installer="http://download.virtualbox.org/virtualbox/5.2.2/VirtualBox-5.2.2-119230-OSX.dmg"
+            	VirtualBox_installer="http://download.virtualbox.org/virtualbox/5.2.42/VirtualBox-5.2.42-137960-OSX.dmg"
             	VirtualBox_file=$(echo "$VirtualBox_installer" | awk -F'/' '{print $NF}')
             	curl -L  $VirtualBox_installer -o ./$VirtualBox_file
             	sudo hdiutil attach $VirtualBox_file
