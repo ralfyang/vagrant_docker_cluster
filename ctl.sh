@@ -1,4 +1,6 @@
 #!/bin/bash
+### Code from https://github.com/ralfyang/vagrant_docker_cluster. Powered by Github.
+
 hname=$1
 
   if [[ $hname = "" ]];then
