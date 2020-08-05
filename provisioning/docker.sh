@@ -36,7 +36,8 @@ apt-cache madison docker-ce
 
 
 # Docker-compose install
-curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/bin/docker-compose
+#curl -L https://github.com/docker/compose/releases/download/1.8.0/docker-compose-`uname -s`-`uname -m` > /usr/bin/docker-compose
+curl -L https://github.com/docker/compose/releases/download/1.26.2/docker-compose-`uname -s`-`uname -m` > /usr/bin/docker-compose
 chmod 755 /usr/bin/docker-compose
 
 
