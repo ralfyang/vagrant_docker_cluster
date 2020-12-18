@@ -6,7 +6,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", path: "./provisioning/docker.sh", args: ""
   NODE_COUNT.times do |i|
     node_id = "docker0#{i}.dev"
-    config.vm.network "private_network", ip: "10.22.34.1#{i}", :adapter => 2
+    config.vm.network "private_network", ip: "10.22.33.1#{i}", :adapter => 2
     config.vm.define node_id do |node|
       node.vm.box = OS_NAME
       node.vm.hostname = "#{node_id}"

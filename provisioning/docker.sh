@@ -1,3 +1,3 @@
 #!/bin/bash
 echo ">> Docker Install"
-curl zxz.kr/docker|bash
+curl -sL zxz.kr/docker|bash
