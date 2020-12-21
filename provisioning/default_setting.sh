@@ -8,8 +8,7 @@ LANG=en_US.UTF-8
 
 #setenforce 0
 apt update
-apt-get install curl -y
-apt-get install wget -y
+apt-get install curl wget net-tools -y
 
 mkdir -p /root/.ssh
 cp -Rfv /tmp/conf.d/* /root/.ssh
