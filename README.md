@@ -3,7 +3,7 @@
 ## Install the Requirements
 ### Source Clone first
 ```
-git clone https://github.com/goody80/vagrant_docker_cluster.git
+git clone https://github.com/ralfyang/vagrant_docker_cluster.git
 cd vagrant_docker_cluster
 ```
 
