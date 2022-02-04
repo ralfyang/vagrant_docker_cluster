@@ -1,0 +1,23 @@
+OS_NAME="ubuntu/focal64"
+NODE_COUNT = 10
+
+Vagrant.configure("2") do |config|
+  NODE_COUNT.times do |i|
+    node_id = "docker0#{i}.dev"
+    config.vm.define node_id do |node|
+      config.hostmanager.enabled = true
+      config.hostmanager.manage_host = true
+      config.vm.synced_folder "~/.ssh/", "/tmp/conf.d/"
+      config.vm.provision "shell", path: "./provisioning/docker.sh", args: ""
+      config.vm.network "private_network", ip: "192.168.62.10#{i}", netmask: "255.255.255.0"
+      node.vm.box = OS_NAME
+      #node.vm.hostname = "#{node_id}"
+      node.vm.hostname = "docker01.dev"
+    end
+  end
+
+  config.vm.provider "virtualbox" do |vb|
+     vb.memory = "2048"
+     vb.cpus = "2"
+  end
+end

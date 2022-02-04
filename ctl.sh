@@ -66,18 +66,17 @@ application_install(){
 
     	Darwin)
             	## VirtualBox Download & Install
-            	#VirtualBox_installer="http://download.virtualbox.org/virtualbox/5.2.42/VirtualBox-5.2.42-137960-OSX.dmg"
-            	VirtualBox_installer="https://download.virtualbox.org/virtualbox/6.1.16/VirtualBox-6.1.16-140961-OSX.dmg"
+            	VirtualBox_installer="https://download.virtualbox.org/virtualbox/6.1.32/VirtualBox-6.1.32-149290-OSX.dmg"
             	VirtualBox_file=$(echo "$VirtualBox_installer" | awk -F'/' '{print $NF}')
             	curl -L  $VirtualBox_installer -o ./$VirtualBox_file
+		curl -L https://download.virtualbox.org/virtualbox/6.1.32/Oracle_VM_VirtualBox_Extension_Pack-6.1.32.vbox-extpack -o Oracle_VM_VirtualBox_Extension_Pack.vbox-extpack
             	sudo hdiutil attach $VirtualBox_file
             	sudo installer -pkg /Volumes/VirtualBox/VirtualBox.pkg -target /
             	hdiutil unmount /Volumes/VirtualBox/
+		sudo vboxmanage extpack install ./Oracle_VM_VirtualBox_Extension_Pack.vbox-extpack
             	rm -f ./$VirtualBox_file
-
 		## Vagrant Download & Install
-		#Vagrant_installer="https://releases.hashicorp.com/vagrant/2.0.1/vagrant_2.0.1_x86_64.dmg"
-		Vagrant_installer="https://releases.hashicorp.com/vagrant/2.2.14/vagrant_2.2.14_x86_64.dmg"
+		Vagrant_installer="https://releases.hashicorp.com/vagrant/2.2.19/vagrant_2.2.19_x86_64.dmg"
 		Vagrant_file=$(echo "$Vagrant_installer" | awk -F'/' '{print $NF}')
 		curl -L $Vagrant_installer -o ./$Vagrant_file
 		sudo hdiutil attach $Vagrant_file

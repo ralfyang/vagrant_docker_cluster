@@ -1,19 +1,47 @@
-OS_NAME="ubuntu/focal64"
-NODE_COUNT = 10
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
   config.vm.synced_folder "~/.ssh/", "/tmp/conf.d/"
   config.vm.provision "shell", path: "./provisioning/docker.sh", args: ""
-  NODE_COUNT.times do |i|
-    node_id = "docker0#{i}.dev"
-    config.vm.network "private_network", type: "dhcp", :adapter => 2
-    config.vm.define node_id do |node|
-      node.vm.box = OS_NAME
-      node.vm.hostname = "#{node_id}"
-    end
-  end
-  config.vm.provider :virtualbox do |vb|
-      vb.customize ["modifyvm", :id, "--memory", "4096"]
-      vb.customize ["modifyvm", :id, "--cpus", "2"]
-  end
+
+      ## Docker VM cluster
+      (1..9).each do |i|
+      node_id = "docker0#{i}.dev"
+         config.vm.define node_id do |node|
+            node.vm.box = "ubuntu/focal64"
+            node.vm.hostname = "#{node_id}"
+#           node.vm.network "forwarded_port", guest: 8080, host: 808#{i}, host_ip: "127.0.0.1"
+            node.vm.network "private_network", ip: "192.168.62.10#{i}", netmask: "255.255.255.0"
+#            node.vm.synced_folder "./data", "/vagrant_data"
+            node.vm.provider "virtualbox" do |vb|
+              vb.memory = "4096"
+              vb.cpus = "2"
+             end
+         end
+      end
+
+      ## Test VM cluster
+      (1..9).each do |i|
+      node_id = "test0#{i}.dev"
+         config.vm.define node_id do |node|
+            node.vm.box = "ubuntu/focal64"
+            node.vm.hostname = "#{node_id}"
+#           node.vm.network "forwarded_port", guest: 8080, host: 808#{i}, host_ip: "127.0.0.1"
+            node.vm.network "private_network", ip: "192.168.62.20#{i}", netmask: "255.255.255.0"
+#            node.vm.synced_folder "./data", "/vagrant_data"
+            node.vm.provider "virtualbox" do |vb|
+              vb.memory = "1024"
+              vb.cpus = "1"
+             end
+         end
+      end
+
+
+   config.vm.provider "virtualbox" do |vb|
+     vb.memory = "2048"
+     vb.cpus = "2"
+     ## Display the VirtualBox GUI when booting the machine
+     #vb.gui = true
+   end
 end
