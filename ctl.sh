@@ -2,6 +2,7 @@
 ### Code from https://github.com/ralfyang/vagrant_docker_cluster. Powered by Github.
 
 hname=$1
+Vagrant_version="2.3.4"
 
   if [[ $hname = "" ]];then
     hname="docker01.dev"
@@ -66,18 +67,21 @@ application_install(){
 
     	Darwin)
             	## VirtualBox Download & Install
-            	VirtualBox_installer="https://download.virtualbox.org/virtualbox/6.1.32/VirtualBox-6.1.32-149290-OSX.dmg"
+            	VirtualBox_installer="https://download.virtualbox.org/virtualbox/7.0.6/VirtualBox-7.0.6-155176-OSX.dmg"
+            	VirtualBox_Ext_pkg="https://download.virtualbox.org/virtualbox/7.0.6/Oracle_VM_VirtualBox_Extension_Pack-7.0.6.vbox-extpack"
             	VirtualBox_file=$(echo "$VirtualBox_installer" | awk -F'/' '{print $NF}')
-            	curl -L  $VirtualBox_installer -o ./$VirtualBox_file
-		curl -L https://download.virtualbox.org/virtualbox/6.1.32/Oracle_VM_VirtualBox_Extension_Pack-6.1.32.vbox-extpack -o Oracle_VM_VirtualBox_Extension_Pack.vbox-extpack
+            	curl -L $VirtualBox_installer -o ./$VirtualBox_file
+		curl -L $VirtualBox_Ext_pkg -o Oracle_VM_VirtualBox_Extension_Pack.vbox-extpack
             	sudo hdiutil attach $VirtualBox_file
             	sudo installer -pkg /Volumes/VirtualBox/VirtualBox.pkg -target /
             	hdiutil unmount /Volumes/VirtualBox/
 		sudo vboxmanage extpack install ./Oracle_VM_VirtualBox_Extension_Pack.vbox-extpack
             	rm -f ./$VirtualBox_file
+
 		## Vagrant Download & Install
-		Vagrant_installer="https://releases.hashicorp.com/vagrant/2.2.19/vagrant_2.2.19_x86_64.dmg"
-		Vagrant_file=$(echo "$Vagrant_installer" | awk -F'/' '{print $NF}')
+		Vagrant_installer="https://releases.hashicorp.com/vagrant/$Vagrant_version/vagrant_${Vagrant_version}_darwin_amd64.dmg"
+                #Vagrant_file=$(echo "$Vagrant_installer" | awk -F'/' '{print $NF}')
+                Vagrant_file="vagrant_install.dmg"
 		curl -L $Vagrant_installer -o ./$Vagrant_file
 		sudo hdiutil attach $Vagrant_file
 		sudo installer -pkg /Volumes/Vagrant/vagrant.pkg -target /
