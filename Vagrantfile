@@ -37,6 +37,25 @@ Vagrant.configure("2") do |config|
          end
       end
 
+      ## Win VM cluster
+      (1..9).each do |i|
+      node_id = "win0#{i}.dev"
+         config.vm.define node_id do |node|
+  	 config.vm.provision "shell", path: "./provisioning/provision.ps1", args: ""
+         config.vm.synced_folder "./windows_storege", "c:\tmp"
+            node.vm.box = "gusztavvargadr/windows-10"
+            node.vm.hostname = "#{node_id}"
+            #node.vm.network "forwarded_port", guest: "3389", host: "338#{i}", host_ip: "127.0.0.1"
+            node.vm.network "forwarded_port", guest: "3389", host: "338#{i}", host_ip: "0.0.0.0"
+            node.vm.network "private_network", ip: "192.168.62.21#{i}", netmask: "255.255.255.0"
+#            node.vm.synced_folder "./data", "/vagrant_data"
+            node.vm.provider "virtualbox" do |vb|
+              vb.memory = "8196"
+              vb.cpus = "4"
+             end
+         end
+      end
+
 
    config.vm.provider "virtualbox" do |vb|
      vb.memory = "2048"
