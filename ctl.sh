@@ -62,7 +62,14 @@ application_install(){
 			curl https://www.virtualbox.org/download/oracle_vbox_2016.asc -o /tmp/virtualbox.key
 			sudo apt-key add /tmp/virtualbox.key
       		sudo apt-get update
-      		sudo apt-get install virtualbox-5.2  -y
+		sudo apt-get install linux-headers-$(uname -r)
+      		sudo apt-get install virtualbox  -y
+		sudo /sbin/vboxconfig
+
+		## Vagrant install
+		wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+		echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+		sudo apt update && sudo apt install vagrant
    		;;
 
     	Darwin)
