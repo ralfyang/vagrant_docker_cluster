@@ -15,15 +15,21 @@ sshkey_check(){
 	return 0
 }
 
+resource_chk="./resource.status"
+	if [[ ! -f $resource_chk ]];then
+		touch $resource_chk
+	fi
 
 start(){
 	sshkey_check
 	vagrant up $hname
+	result_vm
 	vagrant ssh $hname
 }
 
 stop(){
 	vagrant halt $hname
+	result_vm
 }
 
 connection(){
@@ -32,11 +38,22 @@ connection(){
 
 reload(){
 	vagrant reload $hname
+	result_vm
+}
+
+result_vm(){
+	$(vagrant status | sed '$d' | sed '$d' |sed '1,2d' |sed '$d' |sed '$d' > $resource_chk ) &
+}
+
+status(){
+	clear
+	cat $resource_chk
 }
 
 reboot(){
 	vagrant halt $hname
 	vagrant up $hname
+	result_vm
 }
 
 remove(){
@@ -45,6 +62,7 @@ remove(){
 	if [[ $sure = "y" ]];then
 		vagrant destroy -f $hname
 	fi
+	result_vm
 }
 
 application_install(){
@@ -112,6 +130,7 @@ echo "[3] Stop VM"
 echo "[4] Reload VM"
 echo "[5] Reboot VM"
 echo "[RM] Remove VM"
+echo "[s] VM status"
 echo "$BARR"
 echo -n " Please insert a key as you need = "
 read choice
@@ -132,5 +151,7 @@ echo "$BARR"
 			reboot;;
 		RM|rm)
 			remove;;
+		S|s)
+			status;;
 	esac
 
