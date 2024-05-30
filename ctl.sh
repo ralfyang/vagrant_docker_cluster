@@ -1,13 +1,10 @@
 #!/bin/bash
 ### Code from https://github.com/ralfyang/vagrant_docker_cluster. Powered by Github.
-
 hname=$1
 Vagrant_version="2.3.4"
-
   if [[ $hname = "" ]];then
     hname="docker01.dev"
   fi
-
 sshkey_check(){
 	if [[ ! -f $HOME/.ssh/id_rsa ]];then
 		ssh-keygen -f $HOME/.ssh/id_rsa -t rsa -N ''
@@ -70,7 +67,6 @@ application_install(){
 	cd ~/tmp
   	arch=`uname -s`-`uname -m`
 	os=`uname -s`
-
   	case $os in
     	Linux)
       		## VirtualBox install
@@ -83,13 +79,11 @@ application_install(){
 		sudo apt-get install linux-headers-$(uname -r)
       		sudo apt-get install virtualbox  -y
 		sudo /sbin/vboxconfig
-
 		## Vagrant install
 		wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 		echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 		sudo apt update && sudo apt install vagrant
    		;;
-
     	Darwin)
             	## VirtualBox Download & Install
             	VirtualBox_installer="https://download.virtualbox.org/virtualbox/7.0.6/VirtualBox-7.0.6-155176-OSX.dmg"
@@ -102,7 +96,6 @@ application_install(){
             	hdiutil unmount /Volumes/VirtualBox/
 		sudo vboxmanage extpack install ./Oracle_VM_VirtualBox_Extension_Pack.vbox-extpack
             	rm -f ./$VirtualBox_file
-
 		## Vagrant Download & Install
 		Vagrant_installer="https://releases.hashicorp.com/vagrant/$Vagrant_version/vagrant_${Vagrant_version}_darwin_amd64.dmg"
                 #Vagrant_file=$(echo "$Vagrant_installer" | awk -F'/' '{print $NF}')
@@ -114,10 +107,7 @@ application_install(){
 		rm -f ./$Vagrant_installer
 	    	;;
     	esac
-
-
 }
-
 clear
 BARR="==========================================================="
 echo "$BARR"
@@ -135,7 +125,6 @@ echo "$BARR"
 echo -n " Please insert a key as you need = "
 read choice
 echo "$BARR"
-
 	case $choice in
 		0)
 			application_install;;
