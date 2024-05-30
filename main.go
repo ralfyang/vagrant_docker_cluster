@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
-	"github.com/gorilla/websocket"
+	"time"
 )
 
 type CommandRequest struct {
@@ -18,12 +18,8 @@ type VMStatus struct {
 	Name     string `json:"Name"`
 	State    string `json:"State"`
 	Provider string `json:"Provider"`
-}
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+	IP       string `json:"IP,omitempty"`
+	Port     string `json:"Port,omitempty"`
 }
 
 func executeCommand(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +42,7 @@ func executeCommand(w http.ResponseWriter, r *http.Request) {
 	case "reload":
 		cmd = exec.Command("vagrant", "reload", req.Arg)
 	case "reboot":
-		cmd = exec.Command("vagrant", "halt", req.Arg, "&&", "vagrant", "up", req.Arg)
+		cmd = exec.Command("vagrant", "reload", req.Arg)
 	case "remove":
 		cmd = exec.Command("vagrant", "destroy", "-f", req.Arg)
 	default:
@@ -69,32 +65,52 @@ func executeCommand(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Command output: %s\n", string(output))
 
 	if req.Command == "status" {
-		lines := strings.Split(string(output), "\n")
-		var statuses []VMStatus
-		for _, line := range lines {
-			fields := strings.Split(line, ",")
-			if len(fields) >= 4 && fields[2] == "state" {
-				status := VMStatus{
-					Name:     fields[1],
-					State:    fields[3],
-					Provider: fields[2],
-				}
-				statuses = append(statuses, status)
-			}
-		}
-
-		resp, err := json.Marshal(map[string]interface{}{"status": statuses})
-		if err != nil {
-			http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(resp)
-	} else {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"message": "Command executed successfully"}`))
+		parseStatus(w, string(output))
+		return
 	}
+
+	// Wait for a short duration to allow Vagrant to update the status
+	time.Sleep(2 * time.Second)
+
+	// Get updated status after executing the command
+	statusCmd := exec.Command("vagrant", "status", "--machine-readable")
+	statusOutput, err := statusCmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Status command error: %s\n", err)
+		http.Error(w, "Status command execution failed", http.StatusInternalServerError)
+		return
+	}
+
+	parseStatus(w, string(statusOutput))
+}
+
+func parseStatus(w http.ResponseWriter, output string) {
+	lines := strings.Split(output, "\n")
+	var statuses []VMStatus
+	for _, line := range lines {
+		fields := strings.Split(line, ",")
+		if len(fields) >= 4 && fields[2] == "state" {
+			status := VMStatus{
+				Name:     fields[1],
+				State:    fields[3],
+				Provider: fields[2],
+			}
+			if status.State == "running" {
+				status.IP = "192.168.1.100" // 임의의 IP
+				status.Port = "8080"       // 임의의 Port
+			}
+			statuses = append(statuses, status)
+		}
+	}
+
+	resp, err := json.Marshal(map[string]interface{}{"status": statuses})
+	if err != nil {
+		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
 }
 
 func main() {
