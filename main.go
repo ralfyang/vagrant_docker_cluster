@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
+	"github.com/gorilla/websocket"
 )
 
 type CommandRequest struct {
@@ -17,6 +18,12 @@ type VMStatus struct {
 	Name     string `json:"Name"`
 	State    string `json:"State"`
 	Provider string `json:"Provider"`
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 func executeCommand(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +49,9 @@ func executeCommand(w http.ResponseWriter, r *http.Request) {
 		cmd = exec.Command("vagrant", "halt", req.Arg, "&&", "vagrant", "up", req.Arg)
 	case "remove":
 		cmd = exec.Command("vagrant", "destroy", "-f", req.Arg)
+	default:
+		http.Error(w, "Unknown command", http.StatusBadRequest)
+		return
 	}
 
 	if cmd == nil {
@@ -82,8 +92,8 @@ func executeCommand(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(resp)
 	} else {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Command executed successfully"))
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"message": "Command executed successfully"}`))
 	}
 }
 
