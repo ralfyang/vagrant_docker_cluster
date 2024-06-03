@@ -65,3 +65,21 @@ The key fingerprint is:
 ```
 vagrant ssh docker01.dev
 ```
+
+## web-console mode
+* setup the `.env` file as below
+```
+Public_IP=111.111.111.2
+Private_IP=192.168.100.13
+PASSWORD=your_password_for_webconsole_login
+```
+
+## Please make sure the Network information as below
+* Running the webconsole
+```
+nohup go run ./main.go > output.log 2>&1 &
+```
+
+* Demo
+![image](https://github.com/ralfyang/vagrant_docker_cluster/assets/4043594/eb3390cd-2551-4663-ad20-059d170e8786)
+
