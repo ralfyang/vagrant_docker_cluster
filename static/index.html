@@ -1,147 +1,153 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Vagrant Controller</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
         }
-        table, th, td {
-            border: 1px solid black;
-        }
         th, td {
-            padding: 10px;
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
             text-align: left;
         }
-        #loading {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 50%;
-            top: 50%;
-            width: 100px;
-            height: 100px;
-            margin: -50px 0 0 -50px;
-            border: 16px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 16px solid blue;
-            animation: spin 2s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .log-container {
+            width: 100%;
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
     <h1>Vagrant Controller</h1>
-    <p>Public IP: <span id="public-ip"></span></p>
-    <p>Private IP: <span id="private-ip"></span></p>
-    <button onclick="sendRequest('status')">Refresh</button>
-
-    <div id="loading"></div>
-    
-    <div id="result"></div>
+    <p>Public IP: <span id="public-ip">Loading...</span></p>
+    <p>Private IP: <span id="private-ip">Loading...</span></p>
+    <button onclick="refreshStatus()">Refresh</button>
+    <div class="log-container" id="log-container"></div>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>State</th>
+                <th>Port</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="vm-table-body">
+            <!-- VMs will be dynamically inserted here -->
+        </tbody>
+    </table>
 
     <script>
-        window.onload = function() {
-            fetchIpInfo();
-            sendRequest('status');
+        const logContainer = document.getElementById('log-container');
+        const ws = new WebSocket(`ws://${window.location.host}/logs`);
+        
+        ws.onmessage = (event) => {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = event.data;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
         };
-
-        function fetchIpInfo() {
-            fetch('/ipinfo')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("public-ip").innerText = data.publicIP;
-                    document.getElementById("private-ip").innerText = data.privateIP;
-                })
-                .catch(error => {
-                    console.error('Error fetching IP info:', error);
-                });
-        }
-
-        function sendRequest(command, arg = '') {
-            const data = { command, arg };
-
-            document.getElementById("loading").style.display = 'block';
-            document.getElementById("result").innerHTML = '';
-
+        
+        ws.onerror = (event) => {
+            const logEntry = document.createElement('div');
+            logEntry.style.color = 'red';
+            logEntry.textContent = `Error: ${event.data}`;
+            logContainer.appendChild(logEntry);
+        };
+        
+        function refreshStatus() {
             fetch('/execute', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify({ command: 'status', arg: '' }),
             })
             .then(response => response.json())
-            .then(data => {
-                document.getElementById("loading").style.display = 'none';
-                if (data.status) {
-                    displayResult(data.status);
-                } else {
-                    document.getElementById("result").innerHTML = `Error: ${data.error}`;
-                }
-            })
-            .catch(error => {
-                document.getElementById("loading").style.display = 'none';
-                document.getElementById("result").innerHTML = `Error: ${error}`;
+            .then(data => updateVMTable(data.status))
+            .catch(error => console.error('Error:', error));
+        }
+
+        function updateVMTable(vmStatuses) {
+            const vmTableBody = document.getElementById('vm-table-body');
+            vmTableBody.innerHTML = '';
+
+            vmStatuses.forEach(vm => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${vm.Name}</td>
+                    <td>${vm.State}</td>
+                    <td>${vm.Port}</td>
+                    <td>
+                        ${vm.State === 'running' ? '<button onclick="sendCommand(\'stop\', \'' + vm.Name + '\')">Stop</button>' : ''}
+                        ${vm.State === 'not_created' ? '<button onclick="sendCommand(\'start\', \'' + vm.Name + '\')">Start</button>' : ''}
+                        ${vm.State !== 'running' && vm.State !== 'not_created' ? '<button onclick="sendCommand(\'start\', \'' + vm.Name + '\')">Start</button>' : ''}
+                        ${vm.State === 'running' ? '<button onclick="sendCommand(\'reload\', \'' + vm.Name + '\')">Reload</button>' : ''}
+                        ${vm.State === 'running' ? '<button onclick="sendCommand(\'reboot\', \'' + vm.Name + '\')">Reboot</button>' : ''}
+                        ${vm.State !== 'running' && vm.State !== 'not_created' && vm.State !== 'poweroff' ? '<button onclick="sendCommand(\'reload\', \'' + vm.Name + '\')">Reload</button>' : ''}
+                        ${vm.State !== 'running' && vm.State !== 'not_created' && vm.State !== 'poweroff' ? '<button onclick="sendCommand(\'reboot\', \'' + vm.Name + '\')">Reboot</button>' : ''}
+                        ${vm.State !== 'not_created' ? '<button onclick="sendCommand(\'remove\', \'' + vm.Name + '\')">Remove</button>' : ''}
+                    </td>
+                `;
+                vmTableBody.appendChild(row);
             });
         }
 
-        function displayResult(statusList) {
-            if (!statusList || statusList.length === 0) {
-                document.getElementById("result").innerHTML = 'No data available';
-                return;
-            }
-
-            const groupedStatus = statusList.reduce((acc, status) => {
-                if (!status.Name) {
-                    return acc;
+        function sendCommand(command, arg) {
+            fetch('/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ command, arg }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Command execution failed');
                 }
-                const group = status.Name.split('.')[0];
-                if (!acc[group]) {
-                    acc[group] = [];
-                }
-                acc[group].push(status);
-                return acc;
-            }, {});
-
-            let html = '';
-            for (const [group, statuses] of Object.entries(groupedStatus)) {
-                html += `<h2>${group}</h2>`;
-                html += `<table><tr><th>Name</th><th>State</th><th>Port</th><th>Actions</th></tr>`;
-                statuses.forEach(status => {
-                    html += `<tr>
-                        <td>${status.Name}</td>
-                        <td>${status.State}</td>
-                        <td>${status.Port}</td>
-                        <td>`;
-                    if (status.State === 'running') {
-                        html += `<button onclick="sendCommand('stop', '${status.Name}')">Stop</button>
-                                 <button onclick="sendCommand('reload', '${status.Name}')">Reload</button>
-                                 <button onclick="sendCommand('reboot', '${status.Name}')">Reboot</button>
-                                 <button onclick="sendCommand('remove', '${status.Name}')">Remove</button>`;
-                    } else if (status.State === 'poweroff') {
-                        html += `<button onclick="sendCommand('start', '${status.Name}')">Start</button>
-                                 <button onclick="sendCommand('reload', '${status.Name}')">Reload</button>
-                                 <button onclick="sendCommand('reboot', '${status.Name}')">Reboot</button>
-                                 <button onclick="sendCommand('remove', '${status.Name}')">Remove</button>`;
-                    } else if (status.State === 'not_created') {
-                        html += `<button onclick="sendCommand('start', '${status.Name}')">Start</button>`;
-                    }
-                    html += `</td></tr>`;
-                });
-                html += `</table>`;
-            }
-            document.getElementById("result").innerHTML = html;
+                return response.json();
+            })
+            .then(data => {
+                const logEntry = document.createElement('div');
+                logEntry.textContent = `Command: ${command} ${arg} executed successfully`;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+                refreshStatus();
+            })
+            .catch(error => {
+                const logEntry = document.createElement('div');
+                logEntry.style.color = 'red';
+                logEntry.textContent = `Error: ${error.message}`;
+                logContainer.appendChild(logEntry);
+            });
         }
 
-        function sendCommand(command, name) {
-            sendRequest(command, name);
+        function fetchIPInfo() {
+            fetch('/ipinfo')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('public-ip').textContent = data.publicIP;
+                    document.getElementById('private-ip').textContent = data.privateIP;
+                })
+                .catch(error => console.error('Error fetching IP info:', error));
         }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            fetchIPInfo();
+            refreshStatus();
+        });
     </script>
 </body>
 </html>

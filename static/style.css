@@ -1,0 +1,32 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+h1 {
+    font-size: 24px;
+}
+
+button {
+    margin: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+#output {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+
+h3 {
+    margin: 10px 0;
+}
+
+p {
+    margin: 5px 0;
+}
+

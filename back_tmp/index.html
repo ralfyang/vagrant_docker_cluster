@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vagrant Controller</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        #loading {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            top: 50%;
+            width: 100px;
+            height: 100px;
+            margin: -50px 0 0 -50px;
+            border: 16px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 16px solid blue;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Vagrant Controller</h1>
+    <p>Public IP: <span id="public-ip"></span></p>
+    <p>Private IP: <span id="private-ip"></span></p>
+    <button onclick="refreshPage()">Refresh</button>
+    
+    <div id="loading"></div>
+    
+    <div id="result"></div>
+
+    <script>
+        window.onload = function() {
+            loadIPs();
+            sendRequest('status', '');
+        };
+
+        function loadIPs() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('public-ip').innerText = data.public_ip;
+                    document.getElementById('private-ip').innerText = data.private_ip;
+                })
+                .catch(error => {
+                    console.error('Error fetching IPs:', error);
+                });
+        }
+
+        function refreshPage() {
+            sendRequest('status', '');
+        }
+
+        function sendRequest(command, arg) {
+            const data = { command, arg };
+
+            document.getElementById("loading").style.display = 'block';
+            document.getElementById("result").innerHTML = '';
+
+            fetch('/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Command execution failed');
+                }
+            })
+            .then(data => {
+                document.getElementById("loading").style.display = 'none';
+                displayResult(data);
+            })
+            .catch(error => {
+                document.getElementById("loading").style.display = 'none';
+                document.getElementById("result").innerHTML = `Error: ${error.message}`;
+            });
+        }
+
+        function displayResult(statusList) {
+            if (!statusList || statusList.length === 0) {
+                document.getElementById("result").innerHTML = 'No data available';
+                return;
+            }
+
+            const groupedStatus = statusList.reduce((acc, status) => {
+                if (!status.Name) {
+                    return acc;
+                }
+                const group = status.Name.split('.')[0];
+                if (!acc[group]) {
+                    acc[group] = [];
+                }
+                acc[group].push(status);
+                return acc;
+            }, {});
+
+            let html = '';
+            for (const [group, statuses] of Object.entries(groupedStatus)) {
+                html += `<h2>${group}</h2>`;
+                html += `<table><tr><th>Name</th><th>State</th><th>Port</th><th>Actions</th></tr>`;
+                statuses.forEach(status => {
+                    const actions = getActions(status.State, status.Name);
+                    html += `<tr>
+                        <td>${status.Name}</td>
+                        <td>${status.State}</td>
+                        <td>${status.Port}</td>
+                        <td>${actions}</td>
+                    </tr>`;
+                });
+                html += `</table>`;
+            }
+            document.getElementById("result").innerHTML = html;
+        }
+
+        function getActions(state, name) {
+            const startButton = `<button onclick="sendRequest('start', '${name}')">Start</button>`;
+            const stopButton = `<button onclick="sendRequest('stop', '${name}')">Stop</button>`;
+            const reloadButton = `<button onclick="sendRequest('reload', '${name}')">Reload</button>`;
+            const rebootButton = `<button onclick="sendRequest('reboot', '${name}')">Reboot</button>`;
+            const removeButton = `<button onclick="sendRequest('remove', '${name}')">Remove</button>`;
+
+            switch (state) {
+                case 'running':
+                    return `${stopButton} ${reloadButton} ${rebootButton} ${removeButton}`;
+                case 'poweroff':
+                    return `${startButton} ${reloadButton} ${rebootButton} ${removeButton}`;
+                case 'not_created':
+                    return `${startButton}`;
+                default:
+                    return '';
+            }
+        }
+    </script>
+</body>
+</html>
+
