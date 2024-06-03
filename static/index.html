@@ -37,19 +37,9 @@
 </head>
 <body>
     <h1>Vagrant Controller</h1>
-    <label for="command">Command:</label>
-    <select id="command">
-        <option value="status">Status</option>
-        <option value="start">Start VM</option>
-        <option value="stop">Stop VM</option>
-        <option value="reload">Reload VM</option>
-        <option value="reboot">Reboot VM</option>
-        <option value="remove">Remove VM</option>
-        <option value="install">Install Virtualbox & Vagrant</option>
-    </select>
-    <label for="arg">Argument (optional):</label>
-    <input type="text" id="arg">
-    <button onclick="sendRequest()">Send</button>
+    <p>Public IP: <span id="public-ip"></span></p>
+    <p>Private IP: <span id="private-ip"></span></p>
+    <button onclick="sendRequest('status')">Refresh</button>
 
     <div id="loading"></div>
     
@@ -57,12 +47,23 @@
 
     <script>
         window.onload = function() {
-            sendRequest();
+            fetchIpInfo();
+            sendRequest('status');
         };
 
-        function sendRequest() {
-            const command = document.getElementById("command").value;
-            const arg = document.getElementById("arg").value;
+        function fetchIpInfo() {
+            fetch('/ipinfo')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("public-ip").innerText = data.publicIP;
+                    document.getElementById("private-ip").innerText = data.privateIP;
+                })
+                .catch(error => {
+                    console.error('Error fetching IP info:', error);
+                });
+        }
+
+        function sendRequest(command, arg = '') {
             const data = { command, arg };
 
             document.getElementById("loading").style.display = 'block';
@@ -111,21 +112,27 @@
             let html = '';
             for (const [group, statuses] of Object.entries(groupedStatus)) {
                 html += `<h2>${group}</h2>`;
-                html += `<table><tr><th>Name</th><th>State</th><th>IP</th><th>Port</th><th>Actions</th></tr>`;
+                html += `<table><tr><th>Name</th><th>State</th><th>Port</th><th>Actions</th></tr>`;
                 statuses.forEach(status => {
                     html += `<tr>
                         <td>${status.Name}</td>
                         <td>${status.State}</td>
-                        <td>${status.IP || ''}</td>
-                        <td>${status.Port || ''}</td>
-                        <td>
-                            <button onclick="sendCommand('start', '${status.Name}')">Start</button>
-                            <button onclick="sendCommand('stop', '${status.Name}')">Stop</button>
-                            <button onclick="sendCommand('reload', '${status.Name}')">Reload</button>
-                            <button onclick="sendCommand('reboot', '${status.Name}')">Reboot</button>
-                            <button onclick="sendCommand('remove', '${status.Name}')">Remove</button>
-                        </td>
-                    </tr>`;
+                        <td>${status.Port}</td>
+                        <td>`;
+                    if (status.State === 'running') {
+                        html += `<button onclick="sendCommand('stop', '${status.Name}')">Stop</button>
+                                 <button onclick="sendCommand('reload', '${status.Name}')">Reload</button>
+                                 <button onclick="sendCommand('reboot', '${status.Name}')">Reboot</button>
+                                 <button onclick="sendCommand('remove', '${status.Name}')">Remove</button>`;
+                    } else if (status.State === 'poweroff') {
+                        html += `<button onclick="sendCommand('start', '${status.Name}')">Start</button>
+                                 <button onclick="sendCommand('reload', '${status.Name}')">Reload</button>
+                                 <button onclick="sendCommand('reboot', '${status.Name}')">Reboot</button>
+                                 <button onclick="sendCommand('remove', '${status.Name}')">Remove</button>`;
+                    } else if (status.State === 'not_created') {
+                        html += `<button onclick="sendCommand('start', '${status.Name}')">Start</button>`;
+                    }
+                    html += `</td></tr>`;
                 });
                 html += `</table>`;
             }
@@ -133,27 +140,7 @@
         }
 
         function sendCommand(command, name) {
-            const data = { command, arg: name };
-
-            document.getElementById("loading").style.display = 'block';
-            document.getElementById("result").innerHTML = '';
-
-            fetch('/execute', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("loading").style.display = 'none';
-                displayResult(data.status);
-            })
-            .catch(error => {
-                document.getElementById("loading").style.display = 'none';
-                document.getElementById("result").innerHTML = `Error: ${error}`;
-            });
+            sendRequest(command, name);
         }
     </script>
 </body>
