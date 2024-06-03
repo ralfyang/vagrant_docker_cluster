@@ -54,6 +54,7 @@
         <p>Public IP: <span id="public-ip">Loading...</span></p>
         <p>Private IP: <span id="private-ip">Loading...</span></p>
         <button onclick="refreshStatus()">Refresh</button>
+        <button onclick="showConfig()">Show Config</button>
         <div class="log-container" id="log-container"></div>
         <table>
             <thead>
@@ -179,6 +180,16 @@
                     document.getElementById('private-ip').textContent = data.privateIP;
                 })
                 .catch(error => console.error('Error fetching IP info:', error));
+        }
+
+        function showConfig() {
+            fetch('/config')
+                .then(response => response.json())
+                .then(data => {
+                    const configWindow = window.open("", "Config", "width=800,height=600");
+                    configWindow.document.write("<pre>" + data.config + "</pre>");
+                })
+                .catch(error => console.error('Error fetching config:', error));
         }
     </script>
 </body>

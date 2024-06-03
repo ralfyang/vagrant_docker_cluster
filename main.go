@@ -274,11 +274,29 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func configHandler(w http.ResponseWriter, r *http.Request) {
+	config, err := os.ReadFile("Vagrantfile")
+	if err != nil {
+		http.Error(w, "Failed to read config", http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.Marshal(map[string]interface{}{"config": string(config)})
+	if err != nil {
+		http.Error(w, "Failed to marshal config", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
+}
+
 func main() {
 	loadEnv()
 	http.HandleFunc("/execute", executeCommand)
 	http.HandleFunc("/ipinfo", getIPInfo)
 	http.HandleFunc("/logs", logHandler)
+	http.HandleFunc("/config", configHandler)
 
 	// Serve static files from the "static" directory
 	fs := http.FileServer(http.Dir("static"))
