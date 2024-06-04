@@ -3,3 +3,9 @@
 resource.status
 .env
 output.log
+history.log
+history.log.1
+history.log.2
+history.log.3
+history.log.4
+vvmanager.pid
