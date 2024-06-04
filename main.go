@@ -33,6 +33,11 @@ type IPInfo struct {
 	PrivateIP string `json:"privateIP"`
 }
 
+type MemoryInfo struct {
+	AvailableMemory string `json:"availableMemory"`
+	TotalMemory     string `json:"totalMemory"`
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -252,6 +257,42 @@ func getIPInfo(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+func getMemoryInfo(w http.ResponseWriter, r *http.Request) {
+	cmd := exec.Command("free", "-h")
+	output, err := cmd.Output()
+	if err != nil {
+		http.Error(w, "Failed to get memory info", http.StatusInternalServerError)
+		return
+	}
+
+	lines := strings.Split(string(output), "\n")
+	if len(lines) < 2 {
+		http.Error(w, "Failed to parse memory info", http.StatusInternalServerError)
+		return
+	}
+
+	fields := strings.Fields(lines[1])
+	if len(fields) < 7 {
+		http.Error(w, "Failed to parse memory info", http.StatusInternalServerError)
+		return
+	}
+
+	totalMemory := fields[1]
+	availableMemory := fields[6]
+
+	resp, err := json.Marshal(MemoryInfo{
+		AvailableMemory: availableMemory,
+		TotalMemory:     totalMemory,
+	})
+	if err != nil {
+		http.Error(w, "Failed to marshal memory info", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
+}
+
 func logHandler(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -269,6 +310,7 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 		_, _, err := ws.ReadMessage()
 		if err != nil {
 			log.Printf("WebSocket read error: %s\n", err)
+			break
 			break
 		}
 	}
@@ -295,6 +337,7 @@ func main() {
 	loadEnv()
 	http.HandleFunc("/execute", executeCommand)
 	http.HandleFunc("/ipinfo", getIPInfo)
+	http.HandleFunc("/memoryinfo", getMemoryInfo)
 	http.HandleFunc("/logs", logHandler)
 	http.HandleFunc("/config", configHandler)
 

@@ -41,6 +41,31 @@
         .hidden {
             display: none;
         }
+        .spinner {
+            margin: 20px auto;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .green-bold {
+            color: green;
+            font-weight: bold;
+        }
+        .darkgray-bold {
+            color: darkgray;
+            font-weight: bold;
+        }
+        .darkred-bold {
+            color: darkred;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -51,17 +76,18 @@
     </div>
     <div id="content" class="hidden">
         <h1>Vagrant Controller</h1>
+        <p>Available Memory: <span id="available-memory" class="green-bold"></span> / Total Memory: <span id="total-memory" class="darkgray-bold"></span></p>
         <p>Public IP: <span id="public-ip">Loading...</span></p>
         <p>Private IP: <span id="private-ip">Loading...</span></p>
         <button onclick="refreshStatus()">Refresh</button>
         <button onclick="showConfig()">Show Config</button>
         <div class="log-container" id="log-container"></div>
+        <div id="loading-spinner" class="spinner hidden"></div>
         <table>
             <thead>
                 <tr>
                     <th>Name</th>
                     <th>State</th>
-                    <th>Port</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -80,6 +106,7 @@
             if (userPassword) {
                 document.getElementById('login-container').classList.add('hidden');
                 document.getElementById('content').classList.remove('hidden');
+                fetchMemoryInfo();
                 fetchIPInfo();
                 refreshStatus();
                 startWebSocket();
@@ -89,14 +116,14 @@
         function startWebSocket() {
             const logContainer = document.getElementById('log-container');
             const ws = new WebSocket(`ws://${window.location.host}/logs`);
-            
+
             ws.onmessage = (event) => {
                 const logEntry = document.createElement('div');
                 logEntry.textContent = event.data;
                 logContainer.appendChild(logEntry);
                 logContainer.scrollTop = logContainer.scrollHeight;
             };
-            
+
             ws.onerror = (event) => {
                 const logEntry = document.createElement('div');
                 logEntry.style.color = 'red';
@@ -106,6 +133,8 @@
         }
 
         function refreshStatus() {
+            const spinner = document.getElementById('loading-spinner');
+            spinner.classList.remove('hidden');
             fetch('/execute', {
                 method: 'POST',
                 headers: {
@@ -114,8 +143,14 @@
                 body: JSON.stringify({ command: 'status', arg: '', password: userPassword }),
             })
             .then(response => response.json())
-            .then(data => updateVMTable(data.status))
-            .catch(error => console.error('Error:', error));
+            .then(data => {
+                updateVMTable(data.status);
+                spinner.classList.add('hidden');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                spinner.classList.add('hidden');
+            });
         }
 
         function updateVMTable(vmStatuses) {
@@ -124,10 +159,17 @@
 
             vmStatuses.forEach(vm => {
                 const row = document.createElement('tr');
+                let stateClass = '';
+                if (vm.State === 'running') {
+                    stateClass = 'green-bold';
+                } else if (vm.State === 'not_created') {
+                    stateClass = '';
+                } else if (vm.State === 'poweroff') {
+                    stateClass = 'darkred-bold';
+                }
                 row.innerHTML = `
                     <td>${vm.Name}</td>
-                    <td>${vm.State}</td>
-                    <td>${vm.Port}</td>
+                    <td class="${stateClass}">${vm.State}</td>
                     <td>
                         ${vm.State === 'running' ? '<button onclick="sendCommand(\'stop\', \'' + vm.Name + '\')">Stop</button>' : ''}
                         ${vm.State === 'not_created' ? '<button onclick="sendCommand(\'start\', \'' + vm.Name + '\')">Start</button>' : ''}
@@ -163,6 +205,7 @@
                 document.getElementById('log-container').appendChild(logEntry);
                 document.getElementById('log-container').scrollTop = document.getElementById('log-container').scrollHeight;
                 refreshStatus();
+                fetchMemoryInfo();
             })
             .catch(error => {
                 const logEntry = document.createElement('div');
@@ -170,6 +213,16 @@
                 logEntry.textContent = `Error: ${error.message}`;
                 document.getElementById('log-container').appendChild(logEntry);
             });
+        }
+
+        function fetchMemoryInfo() {
+            fetch('/memoryinfo')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('available-memory').textContent = data.availableMemory;
+                    document.getElementById('total-memory').textContent = data.totalMemory;
+                })
+                .catch(error => console.error('Error fetching memory info:', error));
         }
 
         function fetchIPInfo() {
