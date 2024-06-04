@@ -3,12 +3,15 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
@@ -311,7 +314,6 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("WebSocket read error: %s\n", err)
 			break
-			break
 		}
 	}
 }
@@ -333,19 +335,85 @@ func configHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+func mainStop() error {
+	pidFile := "vvmanager.pid"
+	pidData, err := os.ReadFile(pidFile)
+	if err != nil {
+		return fmt.Errorf("failed to read pid file: %v", err)
+	}
+
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidData)))
+	if err != nil {
+		return fmt.Errorf("failed to parse pid: %v", err)
+	}
+
+	if err := syscall.Kill(pid, syscall.SIGTERM); err != nil {
+		return fmt.Errorf("failed to kill process: %v", err)
+	}
+
+	if err := os.Remove(pidFile); err != nil {
+		return fmt.Errorf("failed to remove pid file: %v", err)
+	}
+
+	return nil
+}
+
+func mainStart() error {
+	cmd := exec.Command("./vvmanager", "run")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Start()
+
+	pidFile, err := os.Create("vvmanager.pid")
+	if err != nil {
+		return fmt.Errorf("failed to create pid file: %v", err)
+	}
+	defer pidFile.Close()
+
+	if _, err := pidFile.WriteString(fmt.Sprintf("%d", cmd.Process.Pid)); err != nil {
+		return fmt.Errorf("failed to write pid to file: %v", err)
+	}
+
+	return nil
+}
+
 func main() {
-	loadEnv()
-	http.HandleFunc("/execute", executeCommand)
-	http.HandleFunc("/ipinfo", getIPInfo)
-	http.HandleFunc("/memoryinfo", getMemoryInfo)
-	http.HandleFunc("/logs", logHandler)
-	http.HandleFunc("/config", configHandler)
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "start":
+			if err := mainStart(); err != nil {
+				log.Fatalf("Failed to start: %v", err)
+			}
+		case "stop":
+			if err := mainStop(); err != nil {
+				log.Fatalf("Failed to stop: %v", err)
+			}
+		case "restart":
+			if err := mainStop(); err != nil {
+				log.Fatalf("Failed to stop: %v", err)
+			}
+			if err := mainStart(); err != nil {
+				log.Fatalf("Failed to start: %v", err)
+			}
+		case "run":
+			loadEnv()
+			http.HandleFunc("/execute", executeCommand)
+			http.HandleFunc("/ipinfo", getIPInfo)
+			http.HandleFunc("/memoryinfo", getMemoryInfo)
+			http.HandleFunc("/logs", logHandler)
+			http.HandleFunc("/config", configHandler)
 
-	// Serve static files from the "static" directory
-	fs := http.FileServer(http.Dir("static"))
-	http.Handle("/", fs)
+			// Serve static files from the "static" directory
+			fs := http.FileServer(http.Dir("static"))
+			http.Handle("/", fs)
 
-	log.Println("Starting server on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+			log.Println("Starting server on :8080")
+			log.Fatal(http.ListenAndServe(":8080", nil))
+		default:
+			log.Fatalf("Unknown command: %s", os.Args[1])
+		}
+	} else {
+		log.Println("Usage: vvmanager [start|stop|restart|run]")
+	}
 }
 
