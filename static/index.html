@@ -62,6 +62,10 @@
             color: darkgray;
             font-weight: bold;
         }
+        .red-bold {
+            color: red;
+            font-weight: bold;
+        }
         .darkred-bold {
             color: darkred;
             font-weight: bold;
@@ -164,6 +168,8 @@
                     stateClass = 'green-bold';
                 } else if (vm.State === 'not_created') {
                     stateClass = '';
+                } else if (vm.State === 'aborted') {
+                    stateClass = 'red-bold';
                 } else if (vm.State === 'poweroff') {
                     stateClass = 'darkred-bold';
                 }
