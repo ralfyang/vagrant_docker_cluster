@@ -83,7 +83,7 @@ Private_IP=192.168.100.13
 PASSWORD=your_password_for_webconsole_login
 ```
 
-* Running the webconsole
+* Running the webconsole for test
 ```
 nohup go run ./main.go > output.log 2>&1 &
 ```
