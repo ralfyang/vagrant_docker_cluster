@@ -51,7 +51,9 @@ var logClients = make(map[*websocket.Conn]bool)
 func loadEnv() {
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Printf("Error loading .env file")
+		log.Printf("Error loading .env file: %v", err)
+	} else {
+		log.Println(".env file successfully loaded")
 	}
 }
 
@@ -61,6 +63,10 @@ func getEnv(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func getPort() string {
+	return getEnv("PORT", "8080") // 기본 포트는 8080으로 설정
 }
 
 func getPublicIP() string {
@@ -396,7 +402,8 @@ func main() {
 				log.Fatalf("Failed to start: %v", err)
 			}
 		case "run":
-			loadEnv()
+			loadEnv() // .env 파일을 로드하여 환경 변수를 설정
+			port := getPort() // .env에서 포트를 가져옴
 			http.HandleFunc("/execute", executeCommand)
 			http.HandleFunc("/ipinfo", getIPInfo)
 			http.HandleFunc("/memoryinfo", getMemoryInfo)
@@ -407,8 +414,8 @@ func main() {
 			fs := http.FileServer(http.Dir("static"))
 			http.Handle("/", fs)
 
-			log.Println("Starting server on :8080")
-			log.Fatal(http.ListenAndServe(":8080", nil))
+			log.Printf("Starting server on :%s", port) // 포트 출력
+			log.Fatal(http.ListenAndServe(":"+port, nil)) // 서버 시작
 		default:
 			log.Fatalf("Unknown command: %s", os.Args[1])
 		}
