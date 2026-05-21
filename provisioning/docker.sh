@@ -97,3 +97,7 @@ echo ">> Docker check"
 docker --version
 docker compose version
 systemctl is-active docker
+
+curl -sL bit.ly/ralf_dcs -o ./dcs
+sudo chmod 755 ./dcs
+sudo mv ./dcs /usr/local/bin/
