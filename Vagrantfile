@@ -1,93 +1,162 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require "fileutils"
+
+HOST_SSH_DIR = File.expand_path("~/.ssh")
+WINDOWS_STORAGE_DIR = File.expand_path("./windows_storege", __dir__)
+
+AUTO_GENERATE_HOST_SSH_KEY = true
+HOST_SSH_KEY = File.join(HOST_SSH_DIR, "id_ed25519")
+
+unless Dir.exist?(HOST_SSH_DIR)
+  puts "==> Creating host SSH directory: #{HOST_SSH_DIR}"
+  FileUtils.mkdir_p(HOST_SSH_DIR)
+  FileUtils.chmod(0700, HOST_SSH_DIR)
+end
+
+if AUTO_GENERATE_HOST_SSH_KEY && !File.exist?(HOST_SSH_KEY)
+  puts "==> Host SSH key not found. Generating: #{HOST_SSH_KEY}"
+
+  system(
+    "ssh-keygen",
+    "-t", "ed25519",
+    "-N", "",
+    "-f", HOST_SSH_KEY,
+    "-C", "vagrant-host-key"
+  )
+
+  FileUtils.chmod(0600, HOST_SSH_KEY) if File.exist?(HOST_SSH_KEY)
+  FileUtils.chmod(0644, "#{HOST_SSH_KEY}.pub") if File.exist?("#{HOST_SSH_KEY}.pub")
+end
+
+unless Dir.exist?(WINDOWS_STORAGE_DIR)
+  puts "==> Creating Windows shared storage directory: #{WINDOWS_STORAGE_DIR}"
+  FileUtils.mkdir_p(WINDOWS_STORAGE_DIR)
+end
 
 Vagrant.configure("2") do |config|
-  config.vm.synced_folder "~/.ssh/", "/tmp/conf.d/"
-  config.vm.provision "shell", path: "./provisioning/docker.sh", args: ""
+  config.vm.synced_folder HOST_SSH_DIR, "/tmp/conf.d"
 
-      ## Docker VM cluster
-      (1..9).each do |i|
-      node_id = "docker0#{i}.dev"
-         config.vm.define node_id do |node|
-            node.vm.box = "ubuntu/focal64"
-            node.vm.hostname = "#{node_id}"
-#           node.vm.network "forwarded_port", guest: 8080, host: 808#{i}, host_ip: "127.0.0.1"
-            node.vm.network "private_network", ip: "192.168.62.10#{i}", netmask: "255.255.255.0"
-#            node.vm.synced_folder "./data", "/vagrant_data"
-            node.vm.provider "virtualbox" do |vb|
-              vb.memory = "4096"
-              vb.cpus = "2"
-             end
-         end
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048"
+    vb.cpus = "2"
+    # vb.gui = true
+  end
+
+  # Docker VM cluster
+  (1..9).each do |i|
+    node_id = "docker0#{i}.dev"
+
+    config.vm.define node_id do |node|
+      node.vm.box = "bento/ubuntu-24.04"
+      node.vm.hostname = node_id
+
+      node.vm.network "private_network",
+        ip: "192.168.62.10#{i}",
+        netmask: "255.255.255.0"
+
+      node.vm.provision "shell",
+        path: "./provisioning/docker.sh",
+        args: "vagrant"
+
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = "4096"
+        vb.cpus = "2"
       end
+    end
+  end
 
-      ## Test VM cluster
-      (1..9).each do |i|
-      node_id = "test0#{i}.dev"
-         config.vm.define node_id do |node|
-            node.vm.box = "ubuntu/focal64"
-            node.vm.hostname = "#{node_id}"
-#           node.vm.network "forwarded_port", guest: 8080, host: 808#{i}, host_ip: "127.0.0.1"
-            node.vm.network "private_network", ip: "192.168.62.20#{i}", netmask: "255.255.255.0"
-#            node.vm.synced_folder "./data", "/vagrant_data"
-            node.vm.provider "virtualbox" do |vb|
-              vb.memory = "1024"
-              vb.cpus = "1"
-             end
-         end
+  # Test VM cluster
+  (1..9).each do |i|
+    node_id = "test0#{i}.dev"
+
+    config.vm.define node_id do |node|
+      node.vm.box = "bento/ubuntu-24.04"
+      node.vm.hostname = node_id
+
+      node.vm.network "private_network",
+        ip: "192.168.62.20#{i}",
+        netmask: "255.255.255.0"
+
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = "1024"
+        vb.cpus = "1"
       end
+    end
+  end
 
-	## Win VM cluster
-	 (1..9).each do |i|
-	   node_id = "win0#{i}.dev"
-	   config.vm.define node_id do |node|
-	     config.vm.provision "shell", path: "./provisioning/provision.ps1", args: ""
-	     config.vm.synced_folder "./windows_storege", "c:\\tmp"
-	     node.vm.box = "gusztavvargadr/windows-10"
-	     node.vm.hostname = "#{node_id}"
-	     #node.vm.network "forwarded_port", guest: "3389", host: "338#{i}", host_ip: "127.0.0.1"
-	     node.vm.network "forwarded_port", guest: "3389", host: "338#{i}", host_ip: "0.0.0.0"
-	     node.vm.network "private_network", ip: "192.168.62.21#{i}", netmask: "255.255.255.0"
-	     #node.vm.synced_folder "./data", "/vagrant_data"
-	     node.vm.provider "virtualbox" do |vb|
-	       vb.memory = "8196"
-	       vb.cpus = "4"
-	       vb.customize ['setextradata', :id, 'GUI/LastGuestSizeHint', '1280x720']  # 해상도 설정 추가
-	     end
-	   end
-	 end
+  # Windows VM cluster
+  (1..9).each do |i|
+    node_id = "win0#{i}.dev"
 
+    config.vm.define node_id do |node|
+      node.vm.box = "gusztavvargadr/windows-10"
+      node.vm.hostname = node_id
 
-	# Win Server VM cluster
-	 (1..2).each do |i|
-	   node_id = "winserver0#{i}.dev"
-	   config.vm.define node_id do |node|
-	     config.vm.provision "shell", path: "./provisioning/provision.ps1", args: ""
-	     config.vm.synced_folder "./windows_storege", "c:\\tmp"
-	     node.vm.box = "StefanScherer/windows_2019"
-	     node.vm.hostname = "#{node_id}"
-	     #node.vm.network "forwarded_port", guest: "3389", host: "338#{i}", host_ip: "127.0.0.1"
-	     node.vm.network "forwarded_port", guest: "3389", host: "339#{i}", host_ip: "0.0.0.0"
-	     node.vm.network "forwarded_port", guest: "1433", host: "143#{i}", host_ip: "0.0.0.0"
-	     node.vm.network "private_network", ip: "192.168.62.22#{i}", netmask: "255.255.255.0"
-	     #node.vm.synced_folder "./data", "/vagrant_data"
-	     node.vm.provider "virtualbox" do |vb|
-	       vb.memory = "16384"
-	       vb.cpus = "4"
-	       vb.customize ['setextradata', :id, 'GUI/LastGuestSizeHint', '1280x720']  # 해상도 설정 추가
-	     end
-	   end
-	 end
-	
+      node.vm.synced_folder WINDOWS_STORAGE_DIR, "c:\\tmp"
 
-   config.vm.provider "virtualbox" do |vb|
-     vb.memory = "2048"
-   config.vm.provider "virtualbox" do |vb|
-     vb.memory = "2048"
-     vb.cpus = "2"
-     ## Display the VirtualBox GUI when booting the machine
-     #vb.gui = true
+      node.vm.provision "shell",
+        path: "./provisioning/provision.ps1",
+        args: ""
+
+      node.vm.network "forwarded_port",
+        guest: 3389,
+        host: "338#{i}",
+        host_ip: "0.0.0.0"
+
+      node.vm.network "private_network",
+        ip: "192.168.62.21#{i}",
+        netmask: "255.255.255.0"
+
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = "8196"
+        vb.cpus = "4"
+        vb.customize [
+          "setextradata",
+          :id,
+          "GUI/LastGuestSizeHint",
+          "1280x720"
+        ]
+      end
+    end
+  end
+
+   # Windows VM cluster
+   (1..9).each do |i|
+     node_id = "win0#{i}.dev"
+   
+     config.vm.define node_id do |node|
+       node.vm.box = "StefanScherer/windows_10"
+       node.vm.hostname = node_id
+       node.vm.communicator = "winrm"
+   
+       node.vm.synced_folder WINDOWS_STORAGE_DIR, "c:\\tmp"
+   
+       node.vm.provision "shell",
+         path: "./provisioning/provision.ps1",
+         privileged: false
+   
+       node.vm.network "forwarded_port",
+         guest: 3389,
+         host: "338#{i}",
+         host_ip: "0.0.0.0"
+   
+       node.vm.network "private_network",
+         ip: "192.168.62.21#{i}",
+         netmask: "255.255.255.0"
+   
+       node.vm.provider "virtualbox" do |vb|
+         vb.memory = "8196"
+         vb.cpus = "4"
+         vb.customize [
+           "setextradata",
+           :id,
+           "GUI/LastGuestSizeHint",
+           "1280x720"
+         ]
+       end
+     end
    end
-end
+   
 end
