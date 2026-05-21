@@ -112,6 +112,10 @@ Vagrant.configure("2") do |config|
         ip: "192.168.62.20#{i}",
         netmask: "255.255.255.0"
 
+      node.vm.provision "shell",
+        path: "./provisioning/docker.sh",
+        args: "vagrant"
+
       node.vm.provider "virtualbox" do |vb|
         vb.memory = "8196"
         vb.cpus = "4"
